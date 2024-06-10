@@ -19,17 +19,13 @@ def check_db_connection():
             password=DB_PASSWORD
         )
         conn.close()
+        print("Conexión a la base de datos exitosa!")
         return True
     except psycopg2.Error as e:
         print("Error connecting to PostgreSQL:", e)
         return False
 
-@app.route('/check_connection', methods=['GET'])
-def check_connection():
-    if check_db_connection():
-        return jsonify({"message": "Successfully connected to the database"})
-    else:
-        return jsonify({"message": "Failed to connect to the database"}), 500
+
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=os.environ.get('PORT', 5000))
