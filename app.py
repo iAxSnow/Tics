@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+from flask import Flask, jsonify
 import psycopg2
 import os
 
@@ -10,31 +10,26 @@ DB_NAME = os.getenv("DB_NAME")
 DB_USER = os.getenv("DB_USER")
 DB_PASSWORD = os.getenv("DB_PASSWORD")
 
-def get_db_connection():
-    conn = psycopg2.connect(
-        host=DB_HOST,
-        database=DB_NAME,
-        user=DB_USER,
-        password=DB_PASSWORD
-    )
-    return conn
+def check_db_connection():
+    try:
+        conn = psycopg2.connect(
+            host=DB_HOST,
+            database=DB_NAME,
+            user=DB_USER,
+            password=DB_PASSWORD
+        )
+        conn.close()
+        return True
+    except psycopg2.Error as e:
+        print("Error connecting to PostgreSQL:", e)
+        return False
 
-@app.route('/data', methods=['GET'])
-def get_data():
-    param = request.args.get('param', 'ph')
-    period = request.args.get('period', 'daily')
-
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    
-    query = "SELECT timestamp, {} FROM sensor_data WHERE period = %s ORDER BY timestamp".format(param)
-    cursor.execute(query, (period,))
-    data = cursor.fetchall()
-
-    cursor.close()
-    conn.close()
-
-    return jsonify(data)
+@app.route('/check_connection', methods=['GET'])
+def check_connection():
+    if check_db_connection():
+        return jsonify({"message": "Successfully connected to the database"})
+    else:
+        return jsonify({"message": "Failed to connect to the database"}), 500
 
 if __name__ == '__main__':
     app.run(debug=True)
