@@ -5,10 +5,10 @@ import os
 app = Flask(__name__)
 
 # Configuración de la base de datos
-DB_HOST = os.getenv("DB_HOST")
-DB_NAME = os.getenv("DB_NAME")
-DB_USER = os.getenv("DB_USER")
-DB_PASSWORD = os.getenv("DB_PASSWORD")
+DB_HOST = "tics.cpuae6qmuvit.us-east-2.rds.amazonaws.com"
+DB_NAME = "tics"
+DB_USER = "postgres"
+DB_PASSWORD = "postgresql"
 
 def check_db_connection():
     try:
@@ -32,4 +32,4 @@ def check_connection():
         return jsonify({"message": "Failed to connect to the database"}), 500
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, host='0.0.0.0', port=os.environ.get('PORT', 5000))
