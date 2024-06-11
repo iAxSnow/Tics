@@ -107,7 +107,7 @@ def post_data():
                 temperatura = item.get('temperatura')
                 usuario_rut = item.get('usuario_rut')
                 
-                cur.execute('INSERT INTO lecturas_sensor (id_sensor, fecha_hora, ph, humedad, temperatura, rut_usuario) VALUES (%s, CURRENT_TIMESTAMP, %s, %s, %s, %s)',
+                cur.execute('INSERT INTO lecturas_sensor (id_sensor, fecha_hora, ph, humedad, temperatura, usuario_rut) VALUES (%s, CURRENT_TIMESTAMP, %s, %s, %s, %s)',
                             (id_sensor, ph, humedad, temperatura, usuario_rut))
                 
             conn.commit()
