@@ -101,8 +101,6 @@ def create_partition_if_not_exists(conn, month, year):
     except Exception as e:
         print("Error al crear la partición:", e)
 
-
-
 @app.route('/postdata', methods=['POST'])
 def post_data():
     data = request.json
@@ -112,6 +110,13 @@ def post_data():
     conn = get_db_connection()
     if conn:
         try:
+            # Obtener el mes y el año actual
+            current_month = data[0].get('fecha_hora').split()[0].split('-')[1]
+            current_year = data[0].get('fecha_hora').split()[0].split('-')[0]
+            
+            # Crear la partición si no existe
+            create_partition_if_not_exists(conn, current_month, current_year)
+            
             cur = conn.cursor()
             for item in data:
                 id_sensor = item.get('id_sensor')
@@ -122,13 +127,6 @@ def post_data():
                 
                 cur.execute('INSERT INTO lecturas_sensor (id_sensor, fecha_hora, ph, humedad, temperatura, usuario_rut) VALUES (%s, CURRENT_TIMESTAMP, %s, %s, %s, %s)',
                             (id_sensor, ph, humedad, temperatura, usuario_rut))
-                
-                # Obtener el mes y el año actual
-                current_month = item.get('fecha_hora').split()[0].split('-')[1]
-                current_year = item.get('fecha_hora').split()[0].split('-')[0]
-                
-                # Crear la partición si no existe
-                create_partition_if_not_exists(conn, current_month, current_year)
                 
             conn.commit()
             return jsonify({"message": "Datos insertados correctamente"}), 200
@@ -141,6 +139,9 @@ def post_data():
             conn.close()
     else:
         return jsonify({"error": "No se pudo conectar a la base de datos"}), 500
+
+if __name__ == '__main__':
+    app.run(debug=True)
 
 
 
