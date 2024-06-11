@@ -25,5 +25,9 @@ def check_db_connection():
         print("Error connecting to PostgreSQL:", e)
         return False
 
+@app.route('/')
+def index():
+    return jsonify({"message": "Hello, World!"})
+
 if __name__ == '__main__':
     app.run(debug=True)
