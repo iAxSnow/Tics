@@ -98,19 +98,19 @@ def post_data():
                 humedad = item.get('humedad')
                 temperatura = item.get('temperatura')
                 usuario_rut = item.get('usuario_rut')
-                fecha_hora = item.get('fecha_hora', None)  # Obtenemos la fecha_hora, si no se proporciona, asignamos None
+                fecha_hora = item.get('fecha_hora', None)
                 
-                current_month = None
-                current_year = None
+                if not fecha_hora:
+                    return jsonify({"error": "No se proporcionó la fecha_hora"}), 400
                 
-                if fecha_hora:
-                    # Obtener el mes y el año actual
-                    current_month = fecha_hora.split()[0].split('-')[1]
-                    current_year = fecha_hora.split()[0].split('-')[0]
+                # Parseamos la fecha_hora al formato correcto
+                fecha_hora = fecha_hora.replace('T', ' ').replace('+00:00', '')
+                
+                current_month = fecha_hora.split()[0].split('-')[1]
+                current_year = fecha_hora.split()[0].split('-')[0]
                 
                 # Crear la partición si no existe
-                if current_month and current_year:
-                    create_partition_if_not_exists(conn, current_month, current_year)
+                create_partition_if_not_exists(conn, current_month, current_year)
                 
                 cur.execute('INSERT INTO lecturas_sensor (id_sensor, fecha_hora, ph, humedad, temperatura, usuario_rut) VALUES (%s, %s, %s, %s, %s, %s)',
                             (id_sensor, fecha_hora, ph, humedad, temperatura, usuario_rut))
