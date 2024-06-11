@@ -90,6 +90,19 @@ def get_datalecturas():
 
 
 
+
+
+def create_partition_if_not_exists(conn, month, year):
+    try:
+        cur = conn.cursor()
+        cur.execute(f"CREATE TABLE IF NOT EXISTS {year}_{month} PARTITION OF lecturas_sensor FOR VALUES FROM ('{year}-{month}-01 00:00:00') TO ('{year}-{int(month)+1:02d}-01 00:00:00')")
+        conn.commit()
+        cur.close()
+    except Exception as e:
+        print("Error al crear la partición:", e)
+
+
+
 @app.route('/postdata', methods=['POST'])
 def post_data():
     data = request.json
@@ -109,6 +122,13 @@ def post_data():
                 
                 cur.execute('INSERT INTO lecturas_sensor (id_sensor, fecha_hora, ph, humedad, temperatura, usuario_rut) VALUES (%s, CURRENT_TIMESTAMP, %s, %s, %s, %s)',
                             (id_sensor, ph, humedad, temperatura, usuario_rut))
+                
+                # Obtener el mes y el año actual
+                current_month = item.get('fecha_hora').split()[0].split('-')[1]
+                current_year = item.get('fecha_hora').split()[0].split('-')[0]
+                
+                # Crear la partición si no existe
+                create_partition_if_not_exists(conn, current_month, current_year)
                 
             conn.commit()
             return jsonify({"message": "Datos insertados correctamente"}), 200
