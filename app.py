@@ -74,10 +74,11 @@ def get_datalecturas():
 
 def create_partition_if_not_exists(conn, month, year):
     try:
-        cur = conn.cursor()
-        cur.execute(f"CREATE TABLE IF NOT EXISTS {year}_{month} PARTITION OF lecturas_sensor FOR VALUES FROM ('{year}-{month}-01 00:00:00') TO ('{year}-{int(month)+1:02d}-01 00:00:00')")
-        conn.commit()
-        cur.close()
+        if month and year:
+            cur = conn.cursor()
+            cur.execute(f"CREATE TABLE IF NOT EXISTS {year}_{month} PARTITION OF lecturas_sensor FOR VALUES FROM ('{year}-{month}-01 00:00:00') TO ('{year}-{int(month)+1:02d}-01 00:00:00')")
+            conn.commit()
+            cur.close()
     except Exception as e:
         print("Error al crear la partición:", e)
 
