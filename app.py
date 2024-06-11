@@ -98,25 +98,27 @@ def post_data():
     
     conn = get_db_connection()
     if conn:
-        cur = conn.cursor()
         try:
+            cur = conn.cursor()
             for item in data:
+                id_sensor = item.get('id_sensor')
                 ph = item.get('ph')
                 humedad = item.get('humedad')
                 temperatura = item.get('temperatura')
                 usuario_rut = item.get('usuario_rut')
-                id_sensor = item.get('id_sensor')
-
-                cur.execute('INSERT INTO lecturas_sensor (id_sensor, fecha_hora, ph, humedad, temperatura, usuario_rut) VALUES (%s, CURRENT_TIMESTAMP, %s, %s, %s, %s)',
+                
+                cur.execute('INSERT INTO lecturas_sensor (id_sensor, fecha_hora, ph, humedad, temperatura, rut_usuario) VALUES (%s, CURRENT_TIMESTAMP, %s, %s, %s, %s)',
                             (id_sensor, ph, humedad, temperatura, usuario_rut))
+                
             conn.commit()
-            cur.close()
-            conn.close()
-            return jsonify({"message": "Datos insertados correctamente"}), 201
-        except psycopg2.Error as e:
+            return jsonify({"message": "Datos insertados correctamente"}), 200
+        except Exception as e:
             print("Error al insertar datos en la base de datos:", e)
             conn.rollback()
-            return jsonify({"error": "No se pudo insertar los datos"}), 500
+            return jsonify({"error": "No se pudieron insertar los datos"}), 500
+        finally:
+            cur.close()
+            conn.close()
     else:
         return jsonify({"error": "No se pudo conectar a la base de datos"}), 500
 
