@@ -29,18 +29,43 @@ def get_db_connection():
         print("Error connecting to PostgreSQL:", e)
         return None
 
+
+
+
+
+
+from decimal import Decimal
+
+def convert_decimal_to_float(data):
+    if isinstance(data, list):
+        return [convert_decimal_to_float(i) for i in data]
+    elif isinstance(data, tuple):
+        return tuple(convert_decimal_to_float(i) for i in data)
+    elif isinstance(data, dict):
+        return {key: convert_decimal_to_float(value) for key, value in data.items()}
+    elif isinstance(data, Decimal):
+        return float(data)
+    else:
+        return data
+
+
+
 @app.route('/data', methods=['GET'])
 def get_data():
     conn = get_db_connection()
     if conn:
         cur = conn.cursor()
-        cur.execute('SELECT * FROM lecturas_sensor')
+        cur.execute('SELECT * FROM your_table')
         rows = cur.fetchall()
         cur.close()
         conn.close()
-        return jsonify(rows)
+        converted_rows = convert_decimal_to_float(rows)
+        return jsonify(converted_rows)
     else:
         return jsonify({"error": "No se pudo conectar a la base de datos"})
+
+
+
 
 @app.route('/data', methods=['POST'])
 def post_data():
