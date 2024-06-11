@@ -90,30 +90,58 @@ def get_datalecturas():
 
 
 
-@app.route('/data', methods=['POST'])
+@app.route('/postdata', methods=['POST'])
 def post_data():
     data = request.json
     if not data:
-        return jsonify({"error": "No se proporcionaron datos"})
+        return jsonify({"error": "No se proporcionaron datos"}), 400
     
     conn = get_db_connection()
     if conn:
         cur = conn.cursor()
-        for item in data:
-            fecha_hora = item.get('fecha_hora')
-            ph = item.get('ph')
-            humedad = item.get('humedad')
-            temperatura = item.get('temperatura')
-            usuario_rut = item.get('usuario_rut')
+        try:
+            for item in data:
+                ph = item.get('ph')
+                humedad = item.get('humedad')
+                temperatura = item.get('temperatura')
+                usuario_rut = item.get('usuario_rut')
+                id_sensor = item.get('id_sensor')
 
-            cur.execute('INSERT INTO lecturas_sensor (fecha_hora, ph, humedad, temperatura, usuario_rut) VALUES (%s, %s, %s, %s, %s)',
-                        (fecha_hora, ph, humedad, temperatura, usuario_rut))
-        conn.commit()
-        cur.close()
-        conn.close()
-        return jsonify({"message": "Datos insertados correctamente"})
+                cur.execute('INSERT INTO lecturas_sensor (id_sensor, fecha_hora, ph, humedad, temperatura, usuario_rut) VALUES (%s, CURRENT_TIMESTAMP, %s, %s, %s, %s)',
+                            (id_sensor, ph, humedad, temperatura, usuario_rut))
+            conn.commit()
+            cur.close()
+            conn.close()
+            return jsonify({"message": "Datos insertados correctamente"}), 201
+        except psycopg2.Error as e:
+            print("Error al insertar datos en la base de datos:", e)
+            conn.rollback()
+            return jsonify({"error": "No se pudo insertar los datos"}), 500
     else:
-        return jsonify({"error": "No se pudo conectar a la base de datos"})
+        return jsonify({"error": "No se pudo conectar a la base de datos"}), 500
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 @app.route('/')
 def index():
