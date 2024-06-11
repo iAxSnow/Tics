@@ -50,12 +50,12 @@ def convert_decimal_to_float(data):
 
 
 
-@app.route('/data', methods=['GET'])
+@app.route('/datausuarios', methods=['GET'])
 def get_data():
     conn = get_db_connection()
     if conn:
         cur = conn.cursor()
-        cur.execute('SELECT * FROM your_table')
+        cur.execute('SELECT * FROM usuarios')
         rows = cur.fetchall()
         cur.close()
         conn.close()
@@ -63,6 +63,29 @@ def get_data():
         return jsonify(converted_rows)
     else:
         return jsonify({"error": "No se pudo conectar a la base de datos"})
+
+
+@app.route('/datalecturas', methods=['GET'])
+def get_data():
+    conn = get_db_connection()
+    if conn:
+        cur = conn.cursor()
+        cur.execute('SELECT * FROM lecturas_sensor')
+        rows = cur.fetchall()
+        cur.close()
+        conn.close()
+        converted_rows = convert_decimal_to_float(rows)
+        return jsonify(converted_rows)
+    else:
+        return jsonify({"error": "No se pudo conectar a la base de datos"})
+
+
+
+
+
+
+
+
 
 
 
