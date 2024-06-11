@@ -51,7 +51,7 @@ def convert_decimal_to_float(data):
 
 
 @app.route('/datausuarios', methods=['GET'])
-def get_data():
+def get_datausuarios():
     conn = get_db_connection()
     if conn:
         cur = conn.cursor()
@@ -66,7 +66,7 @@ def get_data():
 
 
 @app.route('/datalecturas', methods=['GET'])
-def get_data():
+def get_datalecturas():
     conn = get_db_connection()
     if conn:
         cur = conn.cursor()
