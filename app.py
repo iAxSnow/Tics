@@ -1,15 +1,18 @@
 from flask import Flask, request, jsonify
 import psycopg2
 import os
+from dotenv import load_dotenv
+
+load_dotenv()  # Cargar las variables de entorno desde el archivo .env
 
 app = Flask(__name__)
 
 # Configuración de la base de datos
 DB_HOST = os.getenv("DB_HOST")
 DB_PORT = os.getenv("DB_PORT")
+DB_NAME = os.getenv("DB_NAME")
 DB_USER = os.getenv("DB_USER")
 DB_PASSWORD = os.getenv("DB_PASSWORD")
-DB_NAME = os.getenv("DB_NAME")
 
 def check_db_connection():
     try:
@@ -29,10 +32,7 @@ def check_db_connection():
 
 @app.route('/')
 def index():
-    if check_db_connection():
-        return jsonify({"message": "Conexión exitosa a la base de datos!"})
-    else:
-        return jsonify({"message": "Error al conectar a la base de datos"})
+    return jsonify({"message": "Hello, World!"})
 
 if __name__ == '__main__':
     app.run(debug=True)
