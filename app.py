@@ -2,6 +2,7 @@ from flask import Flask, request, jsonify
 import psycopg2
 import os
 from dotenv import load_dotenv
+from decimal import Decimal
 
 load_dotenv()  # Cargar las variables de entorno desde el archivo .env
 
@@ -26,15 +27,8 @@ def get_db_connection():
         print("Conexión a la base de datos exitosa!")
         return conn
     except psycopg2.Error as e:
-        print("Error connecting to PostgreSQL:", e)
+        print("Error al conectar a PostgreSQL:", e)
         return None
-
-
-
-
-
-
-from decimal import Decimal
 
 def convert_decimal_to_float(data):
     if isinstance(data, list):
@@ -47,8 +41,6 @@ def convert_decimal_to_float(data):
         return float(data)
     else:
         return data
-
-
 
 @app.route('/datausuarios', methods=['GET'])
 def get_datausuarios():
@@ -64,7 +56,6 @@ def get_datausuarios():
     else:
         return jsonify({"error": "No se pudo conectar a la base de datos"})
 
-
 @app.route('/datalecturas', methods=['GET'])
 def get_datalecturas():
     conn = get_db_connection()
@@ -78,19 +69,6 @@ def get_datalecturas():
         return jsonify(converted_rows)
     else:
         return jsonify({"error": "No se pudo conectar a la base de datos"})
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 def create_partition_if_not_exists(conn, month, year):
     try:
@@ -139,32 +117,6 @@ def post_data():
             conn.close()
     else:
         return jsonify({"error": "No se pudo conectar a la base de datos"}), 500
-
-if __name__ == '__main__':
-    app.run(debug=True)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 @app.route('/')
 def index():
