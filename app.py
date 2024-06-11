@@ -27,7 +27,7 @@ def get_db_connection():
         print("Conexión a la base de datos exitosa!")
         return conn
     except psycopg2.Error as e:
-        print("Error al conectar a PostgreSQL:", e)
+        print("Error connecting to PostgreSQL:", e)
         return None
 
 def convert_decimal_to_float(data):
@@ -56,6 +56,7 @@ def get_datausuarios():
     else:
         return jsonify({"error": "No se pudo conectar a la base de datos"})
 
+
 @app.route('/datalecturas', methods=['GET'])
 def get_datalecturas():
     conn = get_db_connection()
@@ -69,6 +70,7 @@ def get_datalecturas():
         return jsonify(converted_rows)
     else:
         return jsonify({"error": "No se pudo conectar a la base de datos"})
+
 
 def create_partition_if_not_exists(conn, month, year):
     try:
@@ -88,13 +90,6 @@ def post_data():
     conn = get_db_connection()
     if conn:
         try:
-            # Obtener el mes y el año actual
-            current_month = data[0].get('fecha_hora').split()[0].split('-')[1]
-            current_year = data[0].get('fecha_hora').split()[0].split('-')[0]
-            
-            # Crear la partición si no existe
-            create_partition_if_not_exists(conn, current_month, current_year)
-            
             cur = conn.cursor()
             for item in data:
                 id_sensor = item.get('id_sensor')
@@ -102,9 +97,22 @@ def post_data():
                 humedad = item.get('humedad')
                 temperatura = item.get('temperatura')
                 usuario_rut = item.get('usuario_rut')
+                fecha_hora = item.get('fecha_hora', None)  # Obtenemos la fecha_hora, si no se proporciona, asignamos None
                 
-                cur.execute('INSERT INTO lecturas_sensor (id_sensor, fecha_hora, ph, humedad, temperatura, usuario_rut) VALUES (%s, CURRENT_TIMESTAMP, %s, %s, %s, %s)',
-                            (id_sensor, ph, humedad, temperatura, usuario_rut))
+                current_month = None
+                current_year = None
+                
+                if fecha_hora:
+                    # Obtener el mes y el año actual
+                    current_month = fecha_hora.split()[0].split('-')[1]
+                    current_year = fecha_hora.split()[0].split('-')[0]
+                
+                # Crear la partición si no existe
+                if current_month and current_year:
+                    create_partition_if_not_exists(conn, current_month, current_year)
+                
+                cur.execute('INSERT INTO lecturas_sensor (id_sensor, fecha_hora, ph, humedad, temperatura, usuario_rut) VALUES (%s, %s, %s, %s, %s, %s)',
+                            (id_sensor, fecha_hora, ph, humedad, temperatura, usuario_rut))
                 
             conn.commit()
             return jsonify({"message": "Datos insertados correctamente"}), 200
