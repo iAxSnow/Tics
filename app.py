@@ -3,6 +3,7 @@ import psycopg2
 import os
 from dotenv import load_dotenv
 from decimal import Decimal
+from datetime import datetime
 
 load_dotenv()  # Cargar las variables de entorno desde el archivo .env
 
@@ -93,8 +94,12 @@ def post_data():
     if conn:
         try:
             # Obtener el mes y el año actual
-            current_month = data[0].get('fecha_hora').split()[0].split('-')[1]
-            current_year = data[0].get('fecha_hora').split()[0].split('-')[0]
+            if 'fecha_hora' in data[0]:
+                current_month = data[0].get('fecha_hora').split()[0].split('-')[1]
+                current_year = data[0].get('fecha_hora').split()[0].split('-')[0]
+            else:
+                current_month = datetime.now().strftime("%m")
+                current_year = datetime.now().strftime("%Y")
             
             # Crear la partición si no existe
             create_partition_if_not_exists(conn, current_month, current_year)
@@ -126,6 +131,7 @@ def post_data():
             conn.close()
     else:
         return jsonify({"error": "No se pudo conectar a la base de datos"}), 500
+
 
 
 
