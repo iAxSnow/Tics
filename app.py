@@ -91,6 +91,13 @@ def post_data():
     conn = get_db_connection()
     if conn:
         try:
+            # Obtener el mes y el año actual
+            current_month = data[0].get('fecha_hora').split()[0].split('-')[1]
+            current_year = data[0].get('fecha_hora').split()[0].split('-')[0]
+            
+            # Crear la partición si no existe
+            create_partition_if_not_exists(conn, current_month, current_year)
+            
             cur = conn.cursor()
             for item in data:
                 id_sensor = item.get('id_sensor')
@@ -98,22 +105,9 @@ def post_data():
                 humedad = item.get('humedad')
                 temperatura = item.get('temperatura')
                 usuario_rut = item.get('usuario_rut')
-                fecha_hora = item.get('fecha_hora', None)
                 
-                if not fecha_hora:
-                    return jsonify({"error": "No se proporcionó la fecha_hora"}), 400
-                
-                # Parseamos la fecha_hora al formato correcto
-                fecha_hora = fecha_hora.replace('T', ' ').replace('+00:00', '')
-                
-                current_month = fecha_hora.split()[0].split('-')[1]
-                current_year = fecha_hora.split()[0].split('-')[0]
-                
-                # Crear la partición si no existe
-                create_partition_if_not_exists(conn, current_month, current_year)
-                
-                cur.execute('INSERT INTO lecturas_sensor (id_sensor, fecha_hora, ph, humedad, temperatura, usuario_rut) VALUES (%s, %s, %s, %s, %s, %s)',
-                            (id_sensor, fecha_hora, ph, humedad, temperatura, usuario_rut))
+                cur.execute('INSERT INTO lecturas_sensor (id_sensor, fecha_hora, ph, humedad, temperatura, usuario_rut) VALUES (%s, CURRENT_TIMESTAMP, %s, %s, %s, %s)',
+                            (id_sensor, ph, humedad, temperatura, usuario_rut))
                 
             conn.commit()
             return jsonify({"message": "Datos insertados correctamente"}), 200
@@ -126,6 +120,8 @@ def post_data():
             conn.close()
     else:
         return jsonify({"error": "No se pudo conectar a la base de datos"}), 500
+
+
 
 @app.route('/')
 def index():
