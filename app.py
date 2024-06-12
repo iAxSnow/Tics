@@ -77,11 +77,16 @@ def create_partition_if_not_exists(conn, month, year):
     try:
         cur = conn.cursor()
         table_name = f'"{year}_{month:02d}"'
-        cur.execute(f"CREATE TABLE IF NOT EXISTS {table_name} PARTITION OF lecturas_sensor FOR VALUES FROM ('{year}-{month:02d}-01 00:00:00') TO ('{year}-{month+1:02d}-01 00:00:00')")
-        conn.commit()
+        # Verificar si la partición ya existe
+        cur.execute(f"SELECT EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = {table_name})")
+        partition_exists = cur.fetchone()[0]
+        if not partition_exists:
+            cur.execute(f"CREATE TABLE {table_name} PARTITION OF lecturas_sensor FOR VALUES FROM ('{year}-{month:02d}-01 00:00:00') TO ('{year}-{month+1:02d}-01 00:00:00')")
+            conn.commit()
         cur.close()
     except Exception as e:
         print("Error al crear la partición:", e)
+
 
 
 
