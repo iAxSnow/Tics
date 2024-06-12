@@ -76,13 +76,13 @@ def get_datalecturas():
 def create_partition_if_not_exists(conn, month, year):
     try:
         cur = conn.cursor()
-        cur.execute(f"CREATE TABLE IF NOT EXISTS {year}_{month} PARTITION OF lecturas_sensor FOR VALUES FROM ('{year}-{month}-01 00:00:00') TO ('{year}-{int(month)+1:02d}-01 00:00:00')")
+        cur.execute(f"CREATE TABLE IF NOT EXISTS {year}_{month:02d} PARTITION OF lecturas_sensor FOR VALUES FROM ('{year}-{month:02d}-01 00:00:00') TO ('{year}-{month+1:02d}-01 00:00:00')")
         conn.commit()
         cur.close()
-        conn.close()
-        conn = get_db_connection()
     except Exception as e:
         print("Error al crear la partición:", e)
+
+
 
 @app.route('/postdata', methods=['POST'])
 def post_data():
@@ -93,15 +93,10 @@ def post_data():
     conn = get_db_connection()
     if conn:
         try:
-            # Obtener el mes y el año actual
-            if 'fecha_hora' in data[0]:
-                current_month = data[0].get('fecha_hora').split()[0].split('-')[1]
-                current_year = data[0].get('fecha_hora').split()[0].split('-')[0]
-            else:
-                current_month = datetime.now().strftime("%m")
-                current_year = datetime.now().strftime("%Y")
-            
             # Crear la partición si no existe
+            current_date_time = datetime.now()
+            current_month = current_date_time.month
+            current_year = current_date_time.year
             create_partition_if_not_exists(conn, current_month, current_year)
             
             cur = conn.cursor()
@@ -112,13 +107,8 @@ def post_data():
                 temperatura = item.get('temperatura')
                 usuario_rut = item.get('usuario_rut')
                 
-                if 'fecha_hora' not in item or item['fecha_hora'] is None:
-                    # Si no se proporciona la fecha_hora, se usará la fecha y hora actuales
-                    cur.execute('INSERT INTO lecturas_sensor (id_sensor, fecha_hora, ph, humedad, temperatura, usuario_rut) VALUES (%s, CURRENT_TIMESTAMP, %s, %s, %s, %s)',
-                                (id_sensor, ph, humedad, temperatura, usuario_rut))
-                else:
-                    cur.execute('INSERT INTO lecturas_sensor (id_sensor, fecha_hora, ph, humedad, temperatura, usuario_rut) VALUES (%s, %s, %s, %s, %s, %s)',
-                                (id_sensor, item['fecha_hora'], ph, humedad, temperatura, usuario_rut))
+                cur.execute('INSERT INTO lecturas_sensor (id_sensor, fecha_hora, ph, humedad, temperatura, usuario_rut) VALUES (%s, CURRENT_TIMESTAMP, %s, %s, %s, %s)',
+                            (id_sensor, ph, humedad, temperatura, usuario_rut))
                 
             conn.commit()
             return jsonify({"message": "Datos insertados correctamente"}), 200
@@ -131,6 +121,7 @@ def post_data():
             conn.close()
     else:
         return jsonify({"error": "No se pudo conectar a la base de datos"}), 500
+
 
 
 
