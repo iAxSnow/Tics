@@ -76,11 +76,13 @@ def get_datalecturas():
 def create_partition_if_not_exists(conn, month, year):
     try:
         cur = conn.cursor()
-        cur.execute(f"CREATE TABLE IF NOT EXISTS {year}_{month:02d} PARTITION OF lecturas_sensor FOR VALUES FROM ('{year}-{month:02d}-01 00:00:00') TO ('{year}-{month+1:02d}-01 00:00:00')")
+        table_name = f'"{year}_{month:02d}"'
+        cur.execute(f"CREATE TABLE IF NOT EXISTS {table_name} PARTITION OF lecturas_sensor FOR VALUES FROM ('{year}-{month:02d}-01 00:00:00') TO ('{year}-{month+1:02d}-01 00:00:00')")
         conn.commit()
         cur.close()
     except Exception as e:
         print("Error al crear la partición:", e)
+
 
 
 
@@ -121,6 +123,8 @@ def post_data():
             conn.close()
     else:
         return jsonify({"error": "No se pudo conectar a la base de datos"}), 500
+
+
 
 
 
