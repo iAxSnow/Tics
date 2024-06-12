@@ -159,6 +159,47 @@ def post_data():
 
 
 
+@app.route('/login', methods=['POST'])
+def authenticate():
+    data = request.json
+    if not data or 'rut' not in data or 'password' not in data:
+        return jsonify({"error": "RUT o contraseña no proporcionados"}), 400
+    
+    conn = get_db_connection()
+    if conn:
+        try:
+            cur = conn.cursor()
+            cur.execute('SELECT rut, usuario, email, contraseña FROM usuarios WHERE rut = %s', (data['rut'],))
+            user = cur.fetchone()
+            if user:
+                stored_password = user[3]  # La contraseña encriptada almacenada en la base de datos
+                # Verificar la contraseña usando la función crypt de PostgreSQL
+                cur.execute("SELECT crypt(%s, %s) = %s", (data['password'], stored_password, stored_password))
+                is_valid = cur.fetchone()[0]
+                if is_valid:
+                    return jsonify({
+                        "message": "Inicio de sesión exitoso",
+                        "user": {
+                            "rut": user[0],
+                            "usuario": user[1],
+                            "email": user[2]
+                        }
+                    }), 200
+                else:
+                    return jsonify({"error": "RUT o contraseña incorrectos"}), 401
+            else:
+                return jsonify({"error": "Usuario no encontrado"}), 404
+        except Exception as e:
+            print("Error al autenticar:", e)
+            return jsonify({"error": "Error al autenticar"}), 500
+        finally:
+            cur.close()
+            conn.close()
+    else:
+        return jsonify({"error": "No se pudo conectar a la base de datos"}), 500
+
+    
+    
 
 
 @app.route('/')
