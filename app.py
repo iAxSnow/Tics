@@ -79,24 +79,38 @@ def create_partition_if_not_exists(conn, month, year):
         cur.execute("SELECT EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = %s)", (table_name,))
         partition_exists = cur.fetchone()[0]
         if not partition_exists:
-            # Mover datos que no cumplen con la restricción a la nueva partición
+            start_date = f'{year}-{month:02d}-01 00:00:00'
+            end_date = f'{year}-{(month % 12) + 1:02d}-01 00:00:00'
+            
+            # Crear tabla intermedia temporal
+            cur.execute("CREATE TEMP TABLE temp_lecturas AS TABLE lecturas_sensor_default WITH NO DATA")
+
+            # Mover datos que cumplen con las restricciones de la nueva partición a la tabla temporal
+            cur.execute(f"""
+                INSERT INTO temp_lecturas (id, id_sensor, fecha_hora, ph, humedad, temperatura, usuario_rut)
+                SELECT id, id_sensor, fecha_hora, ph, humedad, temperatura, usuario_rut
+                FROM lecturas_sensor_default
+                WHERE fecha_hora >= %s AND fecha_hora < %s
+            """, (start_date, end_date))
+
+            # Eliminar los datos movidos de la partición por defecto
+            cur.execute(f"""
+                DELETE FROM lecturas_sensor_default
+                WHERE fecha_hora >= %s AND fecha_hora < %s
+            """, (start_date, end_date))
+            
+            # Crear la nueva partición
             cur.execute(f"""
                 CREATE TABLE {table_name} PARTITION OF lecturas_sensor
                 FOR VALUES FROM (%s) TO (%s)
-            """, (f'{year}-{month:02d}-01 00:00:00', f'{year}-{(month % 12) + 1:02d}-01 00:00:00'))
+            """, (start_date, end_date))
 
+            # Volver a insertar los datos desde la tabla temporal a la tabla particionada
             cur.execute(f"""
-                INSERT INTO {table_name} (id, fecha_hora, ph, humedad, temperatura, usuario_rut)
-                SELECT id, fecha_hora, ph, humedad, temperatura, usuario_rut
-                FROM ONLY lecturas_sensor_default
-                WHERE fecha_hora >= %s AND fecha_hora < %s
-            """, (f'{year}-{month:02d}-01 00:00:00', f'{year}-{(month % 12) + 1:02d}-01 00:00:00'))
-
-            cur.execute(f"""
-                DELETE FROM ONLY lecturas_sensor_default
-                WHERE fecha_hora >= %s AND fecha_hora < %s
-            """, (f'{year}-{month:02d}-01 00:00:00', f'{year}-{(month % 12) + 1:02d}-01 00:00:00'))
-
+                INSERT INTO lecturas_sensor
+                SELECT * FROM temp_lecturas
+            """)
+            
             conn.commit()
         cur.close()
     except Exception as e:
@@ -140,6 +154,12 @@ def post_data():
             conn.close()
     else:
         return jsonify({"error": "No se pudo conectar a la base de datos"}), 500
+
+
+
+
+
+
 
 @app.route('/')
 def index():
