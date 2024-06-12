@@ -79,11 +79,25 @@ def create_partition_if_not_exists(conn, month, year):
         cur.execute("SELECT EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = %s)", (table_name,))
         partition_exists = cur.fetchone()[0]
         if not partition_exists:
-            # Crear la partición
+            # Mover datos existentes a la nueva partición si es necesario
             cur.execute(f"""
                 CREATE TABLE {table_name} PARTITION OF lecturas_sensor
                 FOR VALUES FROM (%s) TO (%s)
             """, (f'{year}-{month:02d}-01 00:00:00', f'{year}-{(month % 12) + 1:02d}-01 00:00:00'))
+            
+            # Mover datos de la partición por defecto a la nueva partición
+            cur.execute(f"""
+                INSERT INTO {table_name}
+                SELECT * FROM ONLY lecturas_sensor
+                WHERE fecha_hora >= %s AND fecha_hora < %s
+            """, (f'{year}-{month:02d}-01 00:00:00', f'{year}-{(month % 12) + 1:02d}-01 00:00:00'))
+            
+            # Borrar los datos movidos de la partición por defecto
+            cur.execute(f"""
+                DELETE FROM ONLY lecturas_sensor
+                WHERE fecha_hora >= %s AND fecha_hora < %s
+            """, (f'{year}-{month:02d}-01 00:00:00', f'{year}-{(month % 12) + 1:02d}-01 00:00:00'))
+            
             conn.commit()
         cur.close()
     except Exception as e:
