@@ -57,7 +57,6 @@ def get_datausuarios():
     else:
         return jsonify({"error": "No se pudo conectar a la base de datos"})
 
-
 @app.route('/datalecturas', methods=['GET'])
 def get_datalecturas():
     conn = get_db_connection()
@@ -72,25 +71,24 @@ def get_datalecturas():
     else:
         return jsonify({"error": "No se pudo conectar a la base de datos"})
 
-
 def create_partition_if_not_exists(conn, month, year):
     try:
         cur = conn.cursor()
-        table_name = f"{year}_{month:02d}"
+        table_name = f"part_{year}_{month:02d}"
         # Verificar si la partición ya existe
-        cur.execute(f"SELECT EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = %s)", (table_name,))
+        cur.execute("SELECT EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = %s)", (table_name,))
         partition_exists = cur.fetchone()[0]
         if not partition_exists:
+            # Crear la partición
             cur.execute(f"""
                 CREATE TABLE {table_name} PARTITION OF lecturas_sensor
                 FOR VALUES FROM (%s) TO (%s)
-            """, (f'{year}-{month:02d}-01 00:00:00', f'{year}-{month + 1:02d}-01 00:00:00'))
+            """, (f'{year}-{month:02d}-01 00:00:00', f'{year}-{(month % 12) + 1:02d}-01 00:00:00'))
             conn.commit()
         cur.close()
     except Exception as e:
         print("Error al crear la partición:", e)
         conn.rollback()
-
 
 @app.route('/postdata', methods=['POST'])
 def post_data():
@@ -115,8 +113,8 @@ def post_data():
                 temperatura = item.get('temperatura')
                 usuario_rut = item.get('usuario_rut')
                 
-                cur.execute('INSERT INTO lecturas_sensor (fecha_hora, ph, humedad, temperatura, usuario_rut) VALUES (CURRENT_TIMESTAMP, %s, %s, %s, %s)',
-                            (ph, humedad, temperatura, usuario_rut))
+                cur.execute('INSERT INTO lecturas_sensor (id_sensor, fecha_hora, ph, humedad, temperatura, usuario_rut) VALUES (%s, CURRENT_TIMESTAMP, %s, %s, %s, %s)',
+                            (id_sensor, ph, humedad, temperatura, usuario_rut))
                 
             conn.commit()
             return jsonify({"message": "Datos insertados correctamente"}), 200
