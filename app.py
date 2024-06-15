@@ -205,6 +205,10 @@ def authenticate():
 @app.route('/')
 def index():
     return jsonify({"message": "Hello, World!"})
+    
+# archivo wsgi.py
+from tuAppFlask import app as application
 
-if __name__ == '__main__':
-    app.run(debug=True)
+if __name__ == "__main__":
+    application.run()
+
